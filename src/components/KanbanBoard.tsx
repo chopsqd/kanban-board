@@ -40,6 +40,15 @@ const KanbanBoard = () => {
         setColumns(columns => columns.filter(column => column.id !== id))
     }
 
+    const updateColumn = (id: number, title: string) => {
+        const updColumns = columns.map((column: IColumn) => {
+            if(column.id !== id ) return column
+            return {...column, title}
+        })
+
+        setColumns(updColumns)
+    }
+
     const onDragStart = (event: DragStartEvent) => {
         if(event.active.data.current?.type === "column") {
             setActiveColumn(event.active.data.current.column)
@@ -49,8 +58,7 @@ const KanbanBoard = () => {
     const onDragEnd = (event: DragEndEvent) => {
         const {active, over} = event
 
-        if(!over) return
-        if(active.id === over.id) return
+        if(!over || active.id === over.id) return
 
         setColumns(columns => {
             const activeColIdx = columns.findIndex(col => col.id === active.id)
@@ -72,13 +80,14 @@ const KanbanBoard = () => {
                                     key={column.id}
                                     column={column}
                                     deleteColumn={deleteColumn}
+                                    updateColumn={updateColumn}
                                 />
                             )}
                         </SortableContext>
                     </div>
                     <button
                         onClick={createNewColumn}
-                        className={"h-[60px] w-[350px] min-w-[350px] cursor-pointer rounded-lg bg-mainBackgroundColor border-2 border-columnBackgroundColor p-4 ring-lime-600 hover:ring-2 flex gap-2"}
+                        className={"h-[60px] w-[350px] min-w-[350px] cursor-pointer rounded-lg bg-mainBackgroundColor border-2 border-columnBackgroundColor p-4 ring-rose-500 hover:ring-2 flex gap-2"}
                     >
                         <PlusIcon/>
                         Add Column
@@ -88,7 +97,11 @@ const KanbanBoard = () => {
                 {createPortal(
                     <DragOverlay>
                         {activeColumn && (
-                            <Column column={activeColumn} deleteColumn={deleteColumn}/>
+                            <Column
+                                column={activeColumn}
+                                deleteColumn={deleteColumn}
+                                updateColumn={updateColumn}
+                            />
                         )}
                     </DragOverlay>,
                     document.body
