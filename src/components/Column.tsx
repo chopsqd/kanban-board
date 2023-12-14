@@ -1,16 +1,23 @@
-import {IColumn} from "../types.ts";
+import {IColumn, ITask} from "../types.ts";
 import TrashIcon from "../icons/TrashIcon.tsx";
 import {useSortable} from "@dnd-kit/sortable";
 import {CSS} from "@dnd-kit/utilities";
 import {useState} from "react";
+import PlusIcon from "../icons/PlusIcon.tsx";
+import TaskCard from "./TaskCard.tsx";
 
 interface IColumnProps {
     column: IColumn
     deleteColumn: (id: number) => void
     updateColumn: (id: number, title: string) => void
+
+    tasks: Array<ITask>
+    createTask: (columnId: number) => void
+    deleteTask: (id: number) => void
+    updateTask: (id: number, content: string) => void
 }
 
-const Column = ({column, deleteColumn, updateColumn}: IColumnProps) => {
+const Column = ({column, deleteColumn, updateColumn, tasks, createTask, deleteTask, updateTask}: IColumnProps) => {
     const [editMode, setEditMode] = useState<boolean>(false)
 
     const {setNodeRef, isDragging, attributes, listeners, transform, transition} = useSortable({
@@ -27,7 +34,7 @@ const Column = ({column, deleteColumn, updateColumn}: IColumnProps) => {
         transform: CSS.Transform.toString(transform)
     }
 
-    if(isDragging) {
+    if (isDragging) {
         return (
             <div
                 style={style}
@@ -64,7 +71,7 @@ const Column = ({column, deleteColumn, updateColumn}: IColumnProps) => {
                             onChange={event => updateColumn(column.id, event.target.value)}
                             onBlur={() => setEditMode(false)}
                             onKeyDown={event => {
-                                if(event.key === "Enter") {
+                                if (event.key === "Enter") {
                                     setEditMode(false)
                                 }
                             }}
@@ -84,9 +91,23 @@ const Column = ({column, deleteColumn, updateColumn}: IColumnProps) => {
                 </button>
             </div>
 
-            <div className={"flex flex-grow"}>
-                Content
+            <div className={"flex flex-grow flex-col gap-4 p-2 overflow-x-hidden overflow-y-auto"}>
+                {tasks.map(task =>
+                    <TaskCard
+                        key={task.id}
+                        task={task}
+                        deleteTask={deleteTask}
+                        updateTask={updateTask}
+                    />
+                )}
             </div>
+
+            <button
+                className={"flex gap-2 items-center border-columnBackgroundColor border-2 rounded-md p-4 border-x-columnBackgroundColor hover:bg-mainBackgroundColor hover:text-rose-500 active:bg-black"}
+                onClick={() => createTask(column.id)}
+            >
+                <PlusIcon/>Add task
+            </button>
         </div>
     );
 };

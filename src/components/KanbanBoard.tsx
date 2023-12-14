@@ -1,6 +1,6 @@
 import {useMemo, useState} from "react";
 import PlusIcon from "../icons/PlusIcon.tsx";
-import {IColumn} from "../types.ts";
+import {IColumn, ITask} from "../types.ts";
 import Column from "./Column.tsx";
 import {
     DndContext,
@@ -16,6 +16,7 @@ import {createPortal} from "react-dom";
 
 const KanbanBoard = () => {
     const [columns, setColumns] = useState<IColumn[]>([])
+    const [tasks, setTasks] = useState<ITask[]>([])
     const [activeColumn, setActiveColumn] = useState<IColumn | null>(null)
 
     const columnsIds: Array<number> = useMemo(() =>
@@ -69,6 +70,24 @@ const KanbanBoard = () => {
         })
     }
 
+    const createTask = (columnId: number) => {
+        setTasks([
+            ...tasks,
+            {id: Date.now(), columnId, content: `Task ${tasks.length + 1}`}
+        ])
+    }
+
+    const deleteTask = (taskId: number) => {
+        setTasks(tasks => tasks.filter(tasks => tasks.id !== taskId))
+    }
+
+    const updateTask = (id: number, content: string) => {
+        setTasks(tasks.map(task => {
+            if(task.id !== id) return task
+            return {...task, content}
+        }))
+    }
+
     return (
         <div className={"m-auto flex min-h-screen w-full items-center overflow-x-auto overflow-y-hidden px-[40px]"}>
             <DndContext sensors={sensors} onDragStart={onDragStart} onDragEnd={onDragEnd}>
@@ -81,6 +100,10 @@ const KanbanBoard = () => {
                                     column={column}
                                     deleteColumn={deleteColumn}
                                     updateColumn={updateColumn}
+                                    createTask={createTask}
+                                    deleteTask={deleteTask}
+                                    updateTask={updateTask}
+                                    tasks={tasks.filter(task => task.columnId === column.id)}
                                 />
                             )}
                         </SortableContext>
@@ -101,6 +124,10 @@ const KanbanBoard = () => {
                                 column={activeColumn}
                                 deleteColumn={deleteColumn}
                                 updateColumn={updateColumn}
+                                createTask={createTask}
+                                deleteTask={deleteTask}
+                                updateTask={updateTask}
+                                tasks={tasks.filter(task => task.columnId === activeColumn.id)}
                             />
                         )}
                     </DragOverlay>,
