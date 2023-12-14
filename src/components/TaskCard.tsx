@@ -3,24 +3,20 @@ import TrashIcon from "../icons/TrashIcon.tsx";
 import {useState} from "react";
 import {useSortable} from "@dnd-kit/sortable";
 import {CSS} from "@dnd-kit/utilities";
+import {useAppStore} from "../store.ts";
 
-// Refactor this later // This is so cringe...
 interface ITaskCardProps {
     task: ITask
-    deleteTask: (taskId: number) => void
-    updateTask: (taskId: number, content: string) => void
 }
 
-const TaskCard = ({task, deleteTask, updateTask}: ITaskCardProps) => {
+const TaskCard = ({task}: ITaskCardProps) => {
+    const {deleteTask, updateTask} = useAppStore()
     const [mouseOver, setMouseOver] = useState(false)
     const [editMode, setEditMode] = useState(false)
 
     const {setNodeRef, isDragging, attributes, listeners, transform, transition} = useSortable({
         id: task.id,
-        data: {
-            type: "task",
-            task
-        },
+        data: {type: "task", task},
         disabled: editMode
     })
 
@@ -32,6 +28,12 @@ const TaskCard = ({task, deleteTask, updateTask}: ITaskCardProps) => {
     const toggleEditMode = () => {
         setEditMode(prev => !prev)
         setMouseOver(false)
+    }
+
+    const onKeyDown = (event: any) => {
+        if(event.key === "Enter" && event.shiftKey) {
+            toggleEditMode()
+        }
     }
 
     if(isDragging) {
@@ -59,11 +61,7 @@ const TaskCard = ({task, deleteTask, updateTask}: ITaskCardProps) => {
                     autoFocus
                     placeholder={"Task content here..."}
                     onBlur={toggleEditMode}
-                    onKeyDown={event => {
-                        if(event.key === "Enter" && event.shiftKey) {
-                            toggleEditMode()
-                        }
-                    }}
+                    onKeyDown={onKeyDown}
                     onChange={event => updateTask(task.id, event.target.value)}
                 ></textarea>
             </div>
