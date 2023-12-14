@@ -1,10 +1,11 @@
 import {IColumn, ITask} from "../types.ts";
 import TrashIcon from "../icons/TrashIcon.tsx";
-import {useSortable} from "@dnd-kit/sortable";
+import {SortableContext, useSortable} from "@dnd-kit/sortable";
 import {CSS} from "@dnd-kit/utilities";
-import {useState} from "react";
+import {useMemo, useState} from "react";
 import PlusIcon from "../icons/PlusIcon.tsx";
 import TaskCard from "./TaskCard.tsx";
+import {PointerSensor, useSensor, useSensors} from "@dnd-kit/core";
 
 interface IColumnProps {
     column: IColumn
@@ -19,6 +20,10 @@ interface IColumnProps {
 
 const Column = ({column, deleteColumn, updateColumn, tasks, createTask, deleteTask, updateTask}: IColumnProps) => {
     const [editMode, setEditMode] = useState<boolean>(false)
+
+    const tasksIds: Array<number> = useMemo(() =>
+        tasks.map((task: ITask) => task.id), [tasks]
+    )
 
     const {setNodeRef, isDragging, attributes, listeners, transform, transition} = useSortable({
         id: column.id,
@@ -92,14 +97,16 @@ const Column = ({column, deleteColumn, updateColumn, tasks, createTask, deleteTa
             </div>
 
             <div className={"flex flex-grow flex-col gap-4 p-2 overflow-x-hidden overflow-y-auto"}>
-                {tasks.map(task =>
-                    <TaskCard
-                        key={task.id}
-                        task={task}
-                        deleteTask={deleteTask}
-                        updateTask={updateTask}
-                    />
-                )}
+                <SortableContext items={tasksIds}>
+                    {tasks.map(task =>
+                        <TaskCard
+                            key={task.id}
+                            task={task}
+                            deleteTask={deleteTask}
+                            updateTask={updateTask}
+                        />
+                    )}
+                </SortableContext>
             </div>
 
             <button

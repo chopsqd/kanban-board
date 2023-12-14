@@ -4,7 +4,7 @@ import {IColumn, ITask} from "../types.ts";
 import Column from "./Column.tsx";
 import {
     DndContext,
-    DragEndEvent,
+    DragEndEvent, DragOverEvent,
     DragOverlay,
     DragStartEvent,
     PointerSensor,
@@ -13,11 +13,13 @@ import {
 } from "@dnd-kit/core";
 import {arrayMove, SortableContext} from "@dnd-kit/sortable";
 import {createPortal} from "react-dom";
+import TaskCard from "./TaskCard.tsx";
 
 const KanbanBoard = () => {
     const [columns, setColumns] = useState<IColumn[]>([])
     const [tasks, setTasks] = useState<ITask[]>([])
     const [activeColumn, setActiveColumn] = useState<IColumn | null>(null)
+    const [activeTask, setActiveTask] = useState<ITask | null>(null)
 
     const columnsIds: Array<number> = useMemo(() =>
         columns.map((column: IColumn) => column.id), [columns]
@@ -39,6 +41,8 @@ const KanbanBoard = () => {
 
     const deleteColumn = (id: number) => {
         setColumns(columns => columns.filter(column => column.id !== id))
+
+        setTasks(tasks.filter(task => task.columnId !== id))
     }
 
     const updateColumn = (id: number, title: string) => {
@@ -54,9 +58,16 @@ const KanbanBoard = () => {
         if(event.active.data.current?.type === "column") {
             setActiveColumn(event.active.data.current.column)
         }
+
+        if(event.active.data.current?.type === "task") {
+            setActiveTask(event.active.data.current.task)
+        }
     }
 
     const onDragEnd = (event: DragEndEvent) => {
+        setActiveColumn(null)
+        setActiveTask(null)
+
         const {active, over} = event
 
         if(!over || active.id === over.id) return
@@ -68,6 +79,41 @@ const KanbanBoard = () => {
 
             return arrayMove(columns, activeColIdx, overColIdx)
         })
+    }
+
+    const onDragOver = (event: DragOverEvent) => {
+        const {active, over} = event
+
+        if(!over || active.id === over.id) return
+
+        const isActiveTask = active.data.current?.type === "task"
+        const isOverTask = over.data.current?.type === "task"
+
+        if(!isActiveTask) return
+
+        if(isActiveTask && isOverTask) {
+            setTasks(tasks => {
+                const activeTaskIdx = tasks.findIndex(tasks => tasks.id === active.id)
+                const overTaskIdx = tasks.findIndex(tasks => tasks.id === over.id)
+
+                tasks[activeTaskIdx].columnId = tasks[overTaskIdx].columnId
+
+                return arrayMove(tasks, activeTaskIdx, overTaskIdx)
+            })
+        }
+
+        const isOverColumn = over.data.current?.type === "column"
+
+        if(isActiveTask && isOverColumn) {
+            setTasks(tasks => {
+                const activeTaskIdx = tasks.findIndex(tasks => tasks.id === active.id)
+
+                //@ts-ignore
+                tasks[activeTaskIdx].columnId = over.id
+
+                return arrayMove(tasks, activeTaskIdx, activeTaskIdx)
+            })
+        }
     }
 
     const createTask = (columnId: number) => {
@@ -90,7 +136,7 @@ const KanbanBoard = () => {
 
     return (
         <div className={"m-auto flex min-h-screen w-full items-center overflow-x-auto overflow-y-hidden px-[40px]"}>
-            <DndContext sensors={sensors} onDragStart={onDragStart} onDragEnd={onDragEnd}>
+            <DndContext sensors={sensors} onDragStart={onDragStart} onDragEnd={onDragEnd} onDragOver={onDragOver}>
                 <div className={"m-auto flex gap-4"}>
                     <div className={"flex gap-4"}>
                         <SortableContext items={columnsIds}>
@@ -130,6 +176,11 @@ const KanbanBoard = () => {
                                 tasks={tasks.filter(task => task.columnId === activeColumn.id)}
                             />
                         )}
+                        {
+                            activeTask && (
+                                <TaskCard task={activeTask} deleteTask={deleteTask} updateTask={updateTask}/>
+                            )
+                        }
                     </DragOverlay>,
                     document.body
                 )}
